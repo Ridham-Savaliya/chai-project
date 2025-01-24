@@ -1,15 +1,20 @@
 import dotenv from "dotenv";
-dotenv.config({path: "./.env"});
+dotenv.config({ path: "./.env" });
 import mongoose from "mongoose";
-import express from "express";
-const app = express();
 import { DB_NAME } from "../../chaicode-project/src/constants.js";
 import connectToDatabase from "./db/index.js";
+import {app} from "../src/app.js";
 
-connectToDatabase();
-
-
-
+connectToDatabase()
+  .then(() => {
+    app.listen(process.env.PORT || 3001, () => {
+      console.log(`Server is running on port ${process.env.PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error("ERROR: ", error);
+    throw error;
+  });
 
 // second approach
 // import express from "express";

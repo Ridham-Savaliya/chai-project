@@ -12,9 +12,7 @@ const connectToDatabase = async () => {
   try {
     const connectionString = await mongoose.connect(`${process.env.MONGODB_URI}
         /${DB_NAME}`);
-        app.get("/", (req, res) => {
-          res.send("Hello, World!")})
-          app.listen(3000)
+
     console.log(`\n Connected to database on host-port: ${connectionString.connection.host}`);
   } catch (error) {
     console.log("ERROR: ", error);
