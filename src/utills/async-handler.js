@@ -15,7 +15,7 @@
 // using the promise approach
 
 const aysncHandler = (requestHandler) => (req, res, next) => {
-    Promise.resolve(requestHandler(req,res,next)).catch((error) => next(error))
+  return  Promise.resolve(requestHandler(req,res,next)).catch((error) => next(error))
 }
 
 export { aysncHandler };
