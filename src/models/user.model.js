@@ -8,7 +8,7 @@ const userSchema = new Schema(
       type: String,
       required: true,
       unique: true,
-      lowecase: true,
+      lowercase: true,
       trim: true,
       index: true,
     },
@@ -31,7 +31,7 @@ const userSchema = new Schema(
     },
     coverImg: {
       type: String, //cloudinary url
-      required: true,
+      
     },
     watchHistory: {
       type: Schema.Types.ObjectId, //cloudinary url
@@ -43,8 +43,7 @@ const userSchema = new Schema(
     },
     refreshToken: {
       type: String,
-      required: true,
-    },
+          },
   },
   { timestamps: true }
 );
@@ -83,4 +82,5 @@ userSchema.methods.generateRefreshToken = function () {
   );
 };
 
-export const User = mongoose.model("User", userSchema);
+const User = mongoose.model("User", userSchema);
+export default User;

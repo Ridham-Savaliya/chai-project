@@ -1,6 +1,6 @@
 import { aysncHandler } from "../utills/async-handler.js";
 import { ApiError } from "../utills/ApiError.js";
-import {User} from "../models/user.model.js";
+import User from "../models/user.model.js";
 import { uploadImageonCloudinary } from "../utills/cloudinary.js";
 import { ApiResponse } from "../utills/ApiResponse.js";
 const registerUser = aysncHandler(async (req, res, next) => {
@@ -14,7 +14,7 @@ const registerUser = aysncHandler(async (req, res, next) => {
   // check for user creation
   // return response
   const { fullName, userName, email, password } = req.body;
-  console.log(email);
+  // console.log(email);
 
   // if(fullName === "" || userName === "" || email === "" || password === "")
   if (
@@ -23,44 +23,57 @@ const registerUser = aysncHandler(async (req, res, next) => {
     throw new ApiError(400, "All fields are required!");
   }
 
-  const existedUser = User.findOne({ $or: [{ userName }, { email }] });
+  const existedUser = await User.findOne({ $or: [{ userName }, { email }] });
   if (existedUser) {
     throw new ApiError(409, "User already exists!");
   }
 
-  const avtarLocalPath = req.files?.avatar[0]?.path;
-  const coverImgLocalPath = req.files?.coverImg[0]?.path;
+  const avatarLocalPath = req.files?.avatar[0]?.path;
+  // console.log(avtarLocalPath);
+  // const coverImgLocalPath = req.files?.coverImg[0]?.path;
+  // console.log(coverImgLocalPath);
 
-  if (!avtarLocalPath || !coverImgLocalPath) {
+  let coverImgLocalPath;
+  if (
+    req.files &&
+    Array.isArray(req.files.coverImg > 0 && req.files.coverImg[0].path)
+  ) {
+    coverImgLocalPath = req.files.coverImg[0].path;
+  }
+
+  if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar and cover image are required!");
   }
 
-  const avatar = await uploadImageonCloudinary(avtarLocalPath);
+  const avatar = await uploadImageonCloudinary(avatarLocalPath);
+  console.log(avatar);
   const coverimage = await uploadImageonCloudinary(coverImgLocalPath);
+  console.log(coverimage);
 
   if (!avatar) {
-    throw new ApiError(400, "imagea are required!");
+    throw new ApiError(400, "images are required!");
   }
 
- const user  =  await User.create({
+  const user = await User.create({
     fullName,
-    avtar: avatar.url,
+    avatar: avatar.url,
     coverImg: coverimage?.url || "",
     email,
     password,
     userName: userName.toLowerCase(),
   });
 
- const createdUser =  await User.findById(User._id).select("-password -refreshToken");
+  const createdUser = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
 
- if(!createdUser){
-   throw new ApiError(500,"User not created!");
- }
+  if (!createdUser) {
+    throw new ApiError(500, "User not created!");
+  }
 
- return res.status(201).json(
-    new ApiResponse(200, "User created successfully", createdUser)
- )
-
+  return res
+    .status(201)
+    .json(new ApiResponse(200, "User created successfully", createdUser));
 });
 
 export { registerUser };

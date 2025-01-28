@@ -22,8 +22,6 @@ import userRouter from "../src/routes/user.routes.js";
 // routes delcarations
 app.use("/api/v1/users", userRouter);
 
-
-
 app.get("/", (req, res) => {
   res.send("Hello, World!");
 });
