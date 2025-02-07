@@ -184,7 +184,7 @@ const refreshAccessToken = aysncHandler(async (req, res) => {
       throw new ApiError(401, "invalid refreshToken!");
     }
 
-    if (refreshAccessToken !== user.refreshToken) {
+    if (refreshToken !== user.refreshToken) {
       throw new ApiError(401, "refresToken is expired or used!");
     }
 
