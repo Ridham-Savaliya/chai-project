@@ -212,4 +212,130 @@ const refreshAccessToken = aysncHandler(async (req, res) => {
   }
 });
 
-export { registerUser, loginUser, logoutUser,refreshAccessToken };
+const changeCurrentPassword = aysncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  const user = await User.findById(req.user?._id);
+  const ispasswordcorrect = await user.isPasswordCorrect(currentPassword);
+
+  if (!ispasswordcorrect) {
+    throw new ApiError(400, "Current password is incorrect!");
+  }
+
+  user.password = newPassword;
+  await user.save({ validateBeforeSave: false });
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, "Password changed successfully!", {}));
+});
+
+const currentUser = aysncHandler(async (req, res) => {
+  res
+    .status(200)
+    .json(new ApiResponse(200, req.user, "current User found successfully!"));
+});
+
+const updateAccountDetails = aysncHandler(async (req, res) => {
+  const { fullName, userName, email } = req.body;
+
+  if (!(fullName || userName)) {
+    throw new ApiError(400, "fullname or username are required!");
+  }
+
+  if (!email) {
+    throw new ApiError(400, "email is required!");
+  }
+
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    throw new ApiError(404, "User not found!");
+  }
+
+  const updateUser = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        fullName,
+        email: email,
+        userName,
+      },
+    },
+    { new: true }
+  ).select("-password -refreshToken");
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(200, updateUser, "Account details updated successfully!")
+    );
+});
+
+const updateUserAvatar = aysncHandler(async (req, res) => {
+  const file = req.file?.path;
+  if (!file) {
+    throw new ApiError(400, "Avatar is required!");
+  }
+
+  const avatar = await uploadImageonCloudinary(file);
+  if (!avatar.url) {
+    throw new ApiError(500, "Avatar not uploaded!");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: { avatar: avatar.url },
+    },
+    { new: true }
+  ).select("-password -refreshToken");
+
+  if (!user) {
+    throw new ApiError(404, "User not found!");
+  }
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, user, "Avatar updated successfully!"));
+});
+
+const updateUserCoverImage = aysncHandler(async (req, res) => {
+  const file = req.file?.path;
+  if (!file) {
+    throw new ApiError(400, "Avatar is required!");
+  }
+
+  const coverImg = await uploadImageonCloudinary(file);
+  if (!coverImg.url) {
+    throw new ApiError(500, "Avatar not uploaded!");
+  }
+
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        $set: { coverImg: coverImg.url },
+      },
+      { new: true }
+    ).select("-password -refreshToken");
+
+  if (!user) {
+    throw new ApiError(404, "User not found!");
+  }
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, user, "coverImg updated successfully!"));
+});
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  changeCurrentPassword,
+  currentUser,
+  updateAccountDetails,
+  updateUserAvatar,
+  updateUserCoverImage,
+};
