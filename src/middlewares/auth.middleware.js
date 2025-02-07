@@ -21,7 +21,7 @@ export const verifyJWT = aysncHandler(async (req, _, next) => {
    throw new ApiError(401,"invalid accessToken!");
  }
 
- req.user = user 
+ req.user = user  
  next()
  }
  catch(error)
