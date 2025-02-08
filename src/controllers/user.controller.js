@@ -311,21 +311,136 @@ const updateUserCoverImage = aysncHandler(async (req, res) => {
     throw new ApiError(500, "Avatar not uploaded!");
   }
 
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      {
-        $set: { coverImg: coverImg.url },
-      },
-      { new: true }
-    ).select("-password -refreshToken");
-
-  if (!user) {
-    throw new ApiError(404, "User not found!");
-  }
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: { coverImg: coverImg.url },
+    },
+    { new: true }
+  ).select("-password -refreshToken");
 
   res
     .status(200)
     .json(new ApiResponse(200, user, "coverImg updated successfully!"));
+});
+
+const getChannelProfile = aysncHandler(async (req, res) => {
+  const { userName } = req.params;
+
+  if (!userName?.trim()) {
+    throw new ApiError(404, "username is missing!");
+  }
+
+  const channel = await User.aggregate([
+    {
+      $match: { userName: userName.toLowerCase() },
+    },
+    {
+      $lookup: {
+        from: "subscription",
+        localField: "_id",
+        foreignField: "channel",
+        as: "subscribers",
+      },
+    },
+    {
+      $lookup: {
+        from: "subscription",
+        localField: "_id",
+        foreignField: "subscriber",
+        as: "subscribedTo",
+      },
+    },
+    {
+      $addFields: {
+        subscriberCount: { $size: "$subscribers" },
+        subscribedToCount: { $size: "$subscribedTo" },
+        isSubscribed: {
+          $cond: {
+            if: {
+              $in: [req.user?._id, "$subscribers.subscriber"],
+            },
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        password: 0,
+        refreshToken: 0,
+        subscribers: 0,
+        subscribedTo: 0,
+      },
+    },
+  ]);
+
+  console.log(channel);
+
+  if (!channel?.length) {
+    throw new ApiError(404, "channel doesn't exist!");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, channel[0], "user channel fetched successfully!")
+    );
+});
+
+const getWatchHistory = aysncHandler(async (req, res) => {
+  const user = User.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(req.user._id),
+      },
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
+                {
+                  $project: {
+                    fullName: 1,
+                    userName: 1,
+                    avatar: 1,
+                  },
+                },
+              ],
+            },
+          },
+          {
+            $addFields: {
+              owner: {
+                $first: "$owner",
+              },
+            },
+          },
+        ],
+      },
+    },
+  ]);
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        user[0].watchHistory,
+        "watch history fetched successfully!"
+      )
+    );
 });
 
 export {
@@ -338,4 +453,6 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
+  getChannelProfile,
+  getWatchHistory,
 };
