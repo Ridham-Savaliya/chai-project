@@ -230,7 +230,7 @@ const changeCurrentPassword = aysncHandler(async (req, res) => {
     .json(new ApiResponse(200, "Password changed successfully!", {}));
 });
 
-const currentUser = aysncHandler(async (req, res) => {
+const getCurrentUser = aysncHandler(async (req, res) => {
   res
     .status(200)
     .json(new ApiResponse(200, req.user, "current User found successfully!"));
@@ -324,7 +324,7 @@ const updateUserCoverImage = aysncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "coverImg updated successfully!"));
 });
 
-const getChannelProfile = aysncHandler(async (req, res) => {
+const getUserChannelProfile = aysncHandler(async (req, res) => {
   const { userName } = req.params;
 
   if (!userName?.trim()) {
@@ -449,10 +449,10 @@ export {
   logoutUser,
   refreshAccessToken,
   changeCurrentPassword,
-  currentUser,
+  getCurrentUser,
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
-  getChannelProfile,
+  getUserChannelProfile,
   getWatchHistory,
 };
