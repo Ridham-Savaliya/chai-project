@@ -1,9 +1,11 @@
+import mongoose from "mongoose";
 import { aysncHandler } from "../utills/async-handler.js";
 import { ApiError } from "../utills/ApiError.js";
 import User from "../models/user.model.js";
 import { uploadImageonCloudinary } from "../utills/cloudinary.js";
 import { ApiResponse } from "../utills/ApiResponse.js";
 import jwt from "jsonwebtoken";
+import bycrpt from "bcrypt"
 
 const generateAccessAndRefreshToken = async (userId) => {
   try {
@@ -53,15 +55,17 @@ const registerUser = aysncHandler(async (req, res) => {
   // console.log(coverImgLocalPath);
 
   let coverImgLocalPath;
+
   if (
     req.files &&
-    Array.isArray(req.files.coverImg > 0 && req.files.coverImg[0].path)
+    Array.isArray(req.files.coverImg) &&
+    req.files.coverImg.length > 0
   ) {
     coverImgLocalPath = req.files.coverImg[0].path;
   }
 
   if (!avatarLocalPath) {
-    throw new ApiError(400, "Avatar and cover image are required!");
+    throw new ApiError(400, "Avatar image is required!");
   }
 
   const avatar = await uploadImageonCloudinary(avatarLocalPath);
@@ -147,22 +151,33 @@ const loginUser = aysncHandler(async (req, res) => {
 });
 
 const logoutUser = aysncHandler(async (req, res) => {
-  await User.findByIdAndUpdate(
-    req.user_id,
-    { $set: { refreshToken: undefined } },
+  const result = await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $unset: {
+        refreshToken: 1, //this removes the field from the document!
+      },
+    },
     { new: true }
   );
+
+  console.log(result);
+
+  if (!result) {
+    return res.status(500).json(new ApiResponse(500, "Failed to update user"));
+  }
 
   const cookieOptions = {
     httpOnly: true,
     secure: true,
   };
 
+  const loggedOutUser = req.user.userName;
   return res
     .status(200)
     .clearCookie("accessToken", cookieOptions)
     .clearCookie("refreshToken", cookieOptions)
-    .json(new ApiResponse(200, "user logged out sucessfully!", {}));
+    .json(new ApiResponse(200, `${loggedOutUser} logged out sucessfully!`));
 });
 
 const refreshAccessToken = aysncHandler(async (req, res) => {
@@ -215,10 +230,22 @@ const refreshAccessToken = aysncHandler(async (req, res) => {
 const changeCurrentPassword = aysncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
-  const user = await User.findById(req.user?._id);
-  const ispasswordcorrect = await user.isPasswordCorrect(currentPassword);
+  if (!currentPassword || !newPassword) {
+    throw new ApiError(400, "Current password and new password are required!");
+  }
 
-  if (!ispasswordcorrect) {
+  const user = await User.findById(req.user?._id);
+  
+  if (!user) {
+    throw new ApiError(404, "User not found!");
+  }
+
+  console.log('Current password:', currentPassword);
+  console.log('User password hash:', user.password);
+
+  const isPasswordCorrect = await user.isPasswordCorrect(currentPassword);
+
+  if (!isPasswordCorrect) {
     throw new ApiError(400, "Current password is incorrect!");
   }
 
@@ -227,7 +254,7 @@ const changeCurrentPassword = aysncHandler(async (req, res) => {
 
   res
     .status(200)
-    .json(new ApiResponse(200, "Password changed successfully!", {}));
+    .json(new ApiResponse(200, [], "Password changed successfully!"));
 });
 
 const getCurrentUser = aysncHandler(async (req, res) => {
@@ -328,7 +355,7 @@ const getUserChannelProfile = aysncHandler(async (req, res) => {
   const { userName } = req.params;
 
   if (!userName?.trim()) {
-    throw new ApiError(404, "username is missing!");
+    throw new ApiError(404, "userName is missing!");
   }
 
   const channel = await User.aggregate([
@@ -389,59 +416,59 @@ const getUserChannelProfile = aysncHandler(async (req, res) => {
     );
 });
 
-const getWatchHistory = aysncHandler(async (req, res) => {
-  const user = User.aggregate([
-    {
-      $match: {
-        _id: new mongoose.Types.ObjectId(req.user._id),
+const getWatchHistory = aysncHandler(async(req, res) => {
+  const user = await User.aggregate([
+      {
+          $match: {
+              _id: new mongoose.Types.ObjectId(req.user._id)
+          }
       },
-    },
-    {
-      $lookup: {
-        from: "videos",
-        localField: "watchHistory",
-        foreignField: "_id",
-        as: "watchHistory",
-        pipeline: [
-          {
-            $lookup: {
-              from: "users",
-              localField: "owner",
+      {
+          $lookup: {
+              from: "videos",
+              localField: "watchHistory",
               foreignField: "_id",
-              as: "owner",
+              as: "watchHistory",
               pipeline: [
-                {
-                  $project: {
-                    fullName: 1,
-                    userName: 1,
-                    avatar: 1,
+                  {
+                      $lookup: {
+                          from: "users",
+                          localField: "owner",
+                          foreignField: "_id",
+                          as: "owner",
+                          pipeline: [
+                              {
+                                  $project: {
+                                      fullName: 1,
+                                      username: 1,
+                                      avatar: 1
+                                  }
+                              }
+                          ]
+                      }
                   },
-                },
-              ],
-            },
-          },
-          {
-            $addFields: {
-              owner: {
-                $first: "$owner",
-              },
-            },
-          },
-        ],
-      },
-    },
-  ]);
+                  {
+                      $addFields:{
+                          owner:{
+                              $first: "$owner"
+                          }
+                      }
+                  }
+              ]
+          }
+      }
+  ])
 
   return res
-    .status(200)
-    .json(
+  .status(200)
+  .json(
       new ApiResponse(
-        200,
-        user[0].watchHistory,
-        "watch history fetched successfully!"
+          200,
+          user[0].watchHistory,
+          "Watch history fetched successfully"
       )
-    );
-});
+  )
+})
 
 export {
   registerUser,

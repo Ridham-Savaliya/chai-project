@@ -31,7 +31,6 @@ const userSchema = new Schema(
     },
     coverImg: {
       type: String, //cloudinary url
-      
     },
     watchHistory: {
       type: Schema.Types.ObjectId, //cloudinary url
@@ -43,7 +42,7 @@ const userSchema = new Schema(
     },
     refreshToken: {
       type: String,
-          },
+    },
   },
   { timestamps: true }
 );
@@ -56,11 +55,17 @@ userSchema.pre("save", async function (next) {
 });
 
 userSchema.methods.isPasswordCorrect = async function (password) {
+  console.log("Provided password:", password);
+  console.log("Stored password hash:", this.password);
+
+  if (!this.password) {
+    throw new Error("Password is not set for this user");
+  }
   return await bcrypt.compare(password, this.password);
 };
 
 userSchema.methods.generateAccessToken = function () {
- return jwt.sign(
+  return jwt.sign(
     {
       _id: this._id,
       email: this.email,
@@ -73,7 +78,7 @@ userSchema.methods.generateAccessToken = function () {
 };
 
 userSchema.methods.generateRefreshToken = function () {
- return jwt.sign(
+  return jwt.sign(
     {
       _id: this._id,
     },
