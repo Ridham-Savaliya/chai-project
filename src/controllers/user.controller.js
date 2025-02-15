@@ -108,9 +108,12 @@ const loginUser = aysncHandler(async (req, res) => {
   // send cookie into the tokens
 
   const { email, password, userName } = req.body;
-  if (!(userName || email)) {
+
+  // Ensure either username or email is provided
+  if (!userName && !email) {
     throw new ApiError(400, "Username or email is required!");
   }
+
   const user = await User.findOne({ $or: [{ userName }, { email }] });
   if (!user) {
     throw new ApiError(404, "User not found!");
@@ -135,7 +138,7 @@ const loginUser = aysncHandler(async (req, res) => {
     secure: true,
   };
 
-  res.cookie("accessToken", accessToken, cookieOptions);
+  // res.cookie("accessToken", accessToken, cookieOptions);
 
   return res
     .status(200)
