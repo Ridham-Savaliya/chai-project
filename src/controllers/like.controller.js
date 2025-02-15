@@ -1,8 +1,8 @@
 import mongoose, {isValidObjectId} from "mongoose"
 import {Like} from "../models/like.model.js"
-import {ApiError} from "../utils/ApiError.js"
-import {ApiResponse} from "../utils/ApiResponse.js"
-import {aysncHandler} from "../utils/aysncHandler.js"
+import {ApiError} from "../utills/ApiError.js"
+import {ApiResponse} from "../utills/ApiResponse.js"
+import {aysncHandler} from "../utills/async-handler.js"
 
 const toggleVideoLike = aysncHandler(async (req, res) => {
     const {videoId} = req.params

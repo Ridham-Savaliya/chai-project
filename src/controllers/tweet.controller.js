@@ -1,9 +1,9 @@
 import mongoose, { isValidObjectId } from "mongoose"
-import {ApiError} from "../utils/ApiError.js"
-import {ApiResponse} from "../utils/ApiResponse.js"
-import {aysncHandler} from "../utils/aysncHandler.js"
+import {ApiError} from "../utills/ApiError.js"
+import {ApiResponse} from "../utills/ApiResponse.js"
+import {aysncHandler} from "../utills/async-handler.js"
 import {Tweet} from "../models/tweet.model.js"
-import {User} from "../models/user.model.js"
+import User from "../../src/models/user.model.js"
 
 const createTweet = aysncHandler(async (req, res) => {
     //TODO: create tweet
